@@ -18,6 +18,28 @@ else
   echo "✅ Oh My Zsh already installed."
 fi
 
+# Install custom plugins
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+echo "🔌 Installing Oh My Zsh plugins..."
+
+declare -A plugins=(
+  ["zsh-nvm"]="https://github.com/lukechilds/zsh-nvm"
+  ["zsh-autosuggestions"]="https://github.com/zsh-users/zsh-autosuggestions"
+  ["zsh-syntax-highlighting"]="https://github.com/zsh-users/zsh-syntax-highlighting"
+  ["you-should-use"]="https://github.com/MichaelAquilina/zsh-you-should-use"
+  ["zsh-bat"]="https://github.com/fdellwing/zsh-bat"
+)
+
+for plugin in "${!plugins[@]}"; do
+  PLUGIN_DIR="$ZSH_CUSTOM/plugins/$plugin"
+  if [ ! -d "$PLUGIN_DIR" ]; then
+    echo "📥 Cloning $plugin..."
+    git clone --depth=1 "${plugins[$plugin]}" "$PLUGIN_DIR"
+  else
+    echo "🔁 $plugin already installed."
+  fi
+done
+
 # Copy .zshrc only if it doesn't already exist or differs
 ZSHRC_SOURCE="$HOME/.dotfiles/.zshrc"
 ZSHRC_TARGET="$HOME/.zshrc"
@@ -30,7 +52,7 @@ else
   echo "🟡 .zshrc already up to date."
 fi
 
-# Set default shell to zsh (usually not effective in containers, but harmless)
+# Attempt to set default shell (optional and may fail in containers)
 if command -v chsh >/dev/null 2>&1 && grep -q "/zsh" /etc/shells; then
   echo "🔁 Attempting to set default shell to Zsh (may fail in container)..."
   chsh -s "$(command -v zsh)" || echo "⚠️ chsh failed (expected in containers)."

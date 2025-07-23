@@ -5,22 +5,35 @@ set -e
 
 echo "🔧 Setting up Zsh..."
 
-# Install Oh My Zsh (non-interactive)
+# Environment variables to prevent interactive prompts
+export CHSH=no
+export RUNZSH=no
+export KEEP_ZSHRC=yes
+
+# Install Oh My Zsh if not already installed
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
   echo "📦 Installing Oh My Zsh..."
-  RUNZSH=no KEEP_ZSHRC=yes \
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 else
   echo "✅ Oh My Zsh already installed."
 fi
 
-# Copy .zshrc
-echo "📄 Copying .zshrc to $HOME"
-cp ~/.dotfiles/.zshrc ~/.zshrc
+# Copy .zshrc only if it doesn't already exist or differs
+ZSHRC_SOURCE="$HOME/.dotfiles/.zshrc"
+ZSHRC_TARGET="$HOME/.zshrc"
 
-# Set default shell to Zsh (optional; no effect inside container sessions)
-if command -v chsh >/dev/null 2>&1; then
-  chsh -s "$(which zsh)" || true
+echo "📄 Copying .zshrc to $ZSHRC_TARGET"
+if [ ! -f "$ZSHRC_TARGET" ] || ! cmp -s "$ZSHRC_SOURCE" "$ZSHRC_TARGET"; then
+  cp "$ZSHRC_SOURCE" "$ZSHRC_TARGET"
+  echo "✅ .zshrc copied."
+else
+  echo "🟡 .zshrc already up to date."
+fi
+
+# Set default shell to zsh (usually not effective in containers, but harmless)
+if command -v chsh >/dev/null 2>&1 && grep -q "/zsh" /etc/shells; then
+  echo "🔁 Attempting to set default shell to Zsh (may fail in container)..."
+  chsh -s "$(command -v zsh)" || echo "⚠️ chsh failed (expected in containers)."
 fi
 
 echo "🎉 Done! Launch a new terminal to use Zsh."
